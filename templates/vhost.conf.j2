@@ -1,0 +1,37 @@
+#jinja2: trim_blocks: "true", lstrip_blocks: "true"
+<VirtualHost {{item.value.ip}}:{{'443' if item.value.ssl.enabled == true else '80'}}>
+    ServerAdmin {{item.value.serveradmin}}
+
+    DocumentRoot {{item.value.documentroot.path}}
+    ServerName {{item.key}}
+    ServerAlias www.{{item.key}}
+
+  {% if apache2_fastcgi_php == true %}
+    ProxyPassMatch "{{item.value.fpm_pattern}}" "unix:/var/run/php-fpm.{{item.key}}.sock|fcgi://localhost{{item.value.documentroot.path}}/"
+  {% endif %}
+
+    <Directory "{{item.value.documentroot.path}}">
+  {% set apache2_documentroot_directives = apache2_documentroot_directives_default %}
+  {% if item.value.documentroot.directives is defined %}
+    {% set apache2_documentroot_directives = item.value.documentroot.directives %}
+  {% endif %}
+  {% for directive in apache2_documentroot_directives %}
+      {{ directive }}
+  {% endfor %}
+    </Directory>
+
+  {% if item.value.ssl.enabled == true %}
+    <IfModule mod_ssl.c>
+        SSLEngine on
+        SSLCertificateFile {{ item.value.ssl.cert if item.value.ssl.cert is defined else apache2_ssl_certs_path ~ '/' ~ item.key ~ '/cert.pem' }}
+        SSLCertificateKeyFile {{ item.value.ssl.key if item.value.ssl.key is defined else apache2_ssl_private_path ~ item.key ~ '.key'}}
+        {% if item.value.ssl.chain is defined %}
+        SSLCertificateChainFile {{ item.value.ssl.chain }}
+        {% endif %}
+    </IfModule>
+  {% endif %}
+
+    LogLevel warn
+    ErrorLog ${APACHE_LOG_DIR}/{{item.key}}.error.log
+    CustomLog ${APACHE_LOG_DIR}/{{item.key}}.access.log combined
+</VirtualHost>

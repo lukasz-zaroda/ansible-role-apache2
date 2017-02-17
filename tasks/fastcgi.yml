@@ -1,0 +1,11 @@
+---
+
+- name: mod_proxy is enabled.
+  apache2_module: name=proxy
+                  state=present
+  notify: ["restart apache2"]
+
+- name: mod_proxy_fcgi is enabled.
+  apache2_module: name=proxy_fcgi
+                  state=present
+  notify: ["restart apache2"]

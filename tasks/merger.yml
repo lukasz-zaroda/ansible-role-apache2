@@ -1,0 +1,13 @@
+---
+- name: "Config: Reset temporary dictionary."
+  set_fact:
+    _apache2_merger_temp: {}
+
+- name: "Config: Merge configurations in the temporary dictionary."
+  set_fact:
+    {"_apache2_merger_temp":"{{ _apache2_merger_temp | combine({item.key: _apache2_merger_core_defaults}, {item.key: _apache2_merger_defaults}, {item.key: item.value}, recursive=True) }}"}
+  with_dict: "{{_apache2_merger_dict}}"
+
+- name: "Config: Save the content of the temporary dictionary in the variable of the given name."
+  set_fact:
+    {"{{ _apache2_merger_return }}":"{{_apache2_merger_temp}}"}

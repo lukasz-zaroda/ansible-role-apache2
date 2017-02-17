@@ -1,0 +1,7 @@
+---
+
+- name: restart apache2
+  systemd: name={{apache2_daemon}} state=restarted
+
+- name: reload apache2
+  systemd: name={{apache2_daemon}} state=reloaded

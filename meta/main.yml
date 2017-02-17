@@ -1,0 +1,14 @@
+galaxy_info:
+  author: Łukasz Zaroda
+  company: Luken-Tech
+  description: "Apache 2 installation, configuration, and easy virtual hosts management for usage with PHP-FPM."
+  min_ansible_version: 2.2
+  license: MIT
+  platforms:
+  - name: Debian
+    versions:
+    - jessie
+  categories:
+  - system
+
+dependencies: []

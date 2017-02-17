@@ -1,0 +1,51 @@
+---
+- name: Apache2 is installed.
+  package: name={{apache2_package}}
+           state=installed
+
+- name: Daemon is enabled.
+  systemd: name={{apache2_daemon}}
+           state=started
+           enabled=yes
+
+- include: merger.yml
+           _apache2_merger_return="apache2_vhosts_merged"
+           _apache2_merger_dict={{apache2_vhosts}}
+           _apache2_merger_defaults={{apache2_vhosts_defaults}}
+           _apache2_merger_core_defaults={{apache2_vhosts_core_defaults}}
+
+- name: Documents roots are created.
+  file: path={{item.value.documentroot.path}} state=directory owner={{item.value.root_owner}} group={{item.value.root_group}} mode={{item.value.root_mode}}
+  with_dict: "{{apache2_vhosts_merged}}"
+
+- name: Virtual hosts are installed.
+  template: src=vhost.conf.j2 dest={{apache2_config_path}}/sites-available/{{item.key}}.conf owner=root group=root mode=0664
+  with_dict: "{{apache2_vhosts_merged}}"
+  notify: ["restart apache2"]
+
+- name: mod_ssl is enabled.
+  apache2_module: name=ssl
+                  state=present
+  with_dict: "{{apache2_vhosts_merged}}"
+  when: "item.value.ssl.enabled == true"
+  notify: ["restart apache2"]
+
+- include: fastcgi.yml
+  when: apache2_fastcgi_php == true
+
+- name: mod_rewrite is enabled.
+  apache2_module: name=rewrite
+                  state=present
+  notify: ["restart apache2"]
+
+- name: Virtual hosts are enabled
+  command: creates=/etc/apache2/sites-enabled/{{item.key}}.conf a2ensite {{item.key}}
+  when: "(item.value.enabled == true)"
+  with_dict: "{{apache2_vhosts_merged}}"
+  notify: ["restart apache2"]
+
+- name: Virtual hosts are disabled
+  command: removes=/etc/apache2/sites-enabled/{{item.key}}.conf a2dissite {{item.key}}
+  when: "item.value.enabled != true"
+  with_dict: "{{apache2_vhosts_merged}}"
+  notify: ["restart apache2"]
